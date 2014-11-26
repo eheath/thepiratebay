@@ -6,10 +6,13 @@ module ThePirateBay
     def self.find(torrent_id)
 
       doc = Nokogiri::HTML(open('http://thepiratebay.org/torrent/' + torrent_id.to_s))
-
-      dd_cache = contents.search('#details dd').select{|dd| is_a_number?(dd.text) }
+      base_data = doc.css('div#details').css('.col1').css('dd').select{|dd| dd.text =~ /Bytes/}
+      data_string = base_data.first.children.text.match(/\d+\p{Space}Bytes/)
+      bytes = data_string.to_s.match(/\d+/)
 
       contents    = doc.search('#detailsframe')
+      dd_cache = contents.search('#details dd').select{|dd| is_a_number?(dd.text) }
+      
       title       = contents.search('#title').text.strip
       category    = contents.search('#details .col1 dd')[0].text
       nr_files    = dd_cache[0].text
@@ -30,7 +33,8 @@ module ThePirateBay
                  :leechers    => leechers,
                  :magnet_link => magnet_link,
                  :description => description,
-                 :url         => url}
+                 :url         => url, 
+                 :bytes       => bytes.to_s.to_i }
 
       return torrent
     end
